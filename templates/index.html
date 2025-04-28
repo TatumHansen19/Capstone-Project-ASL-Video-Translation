@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ASL Handshape Detector</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.3.2/socket.io.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background-image: url("/static/images/ASL1.jpg");
+      background-size: cover;
+      background-attachment: fixed;
+      background-repeat: no-repeat;
+      background-position: center;
+      color: white;
+    }
+
+    .tabs {
+      display: flex;
+      background-color: rgba(0, 0, 0, 0.8);
+    }
+
+    .tab-button {
+      flex: 1;
+      padding: 15px;
+      cursor: pointer;
+      background-color: #222;
+      border: none;
+      color: white;
+      font-size: 16px;
+    }
+
+    .tab-button.active {
+      background-color: #f78bc1;
+    }
+
+    .tab-content {
+      display: none;
+      padding: 20px;
+      background-color: rgba(0, 0, 0, 0.6);
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    #main-container {
+      display: flex;
+      justify-content: center;
+      margin-top: 20px;
+      gap: 20px;
+    }
+
+    #video {
+      width: 480px;
+      border-radius: 10px;
+      border: 3px solid #fff;
+    }
+
+    #canvas {
+      display: none;
+    }
+
+    #activity-log {
+      width: 300px;
+      height: 400px;
+      overflow-y: auto;
+      border: 2px solid #fff;
+      background-color: rgba(0, 0, 0, 0.5);
+      padding: 10px;
+      text-align: left;
+    }
+
+    .log-item {
+      font-size: 16px;
+      padding: 4px;
+      border-bottom: 1px solid #ccc;
+    }
+
+    #output {
+      font-size: 24px;
+      margin-top: 20px;
+    }
+
+    .output-container {
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    #captured-text {
+      font-size: 20px;
+      color: #eee;
+    }
+
+    button {
+      padding: 10px 15px;
+      font-size: 16px;
+      margin: 8px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+    }
+
+    .button-container {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    #speak-button { background: #f78bc1; color: white; }
+    #clear-button { background: #f78bc1; color: white; }
+    #remove-button { background: #f78bc1; color: white; }
+
+  </style>
+</head>
+<body>
+
+  <!-- 🔘 Tabs -->
+  <div class="tabs">
+    <button class="tab-button active" onclick="switchTab('translator')">Translator</button>
+    <button class="tab-button" onclick="switchTab('student')">About the Students</button>
+    <button class="tab-button" onclick="switchTab('project')">Project Info</button>
+  </div>
+
+  <!-- 📖 Translator Tab -->
+  <div class="tab-content active" id="translator">
+    <div id="main-container">
+      <video id="video" autoplay></video>
+      <div id="activity-log">
+        <h3>Activity Log</h3>
+        <div id="log-container"></div>
+      </div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <div class="output-container">
+      <p id="output">Detected: <span id="detected-letter">None</span></p>
+      <p id="captured-text">Captured Sequence: <span id="captured-sequence">None</span></p>
+    </div>
+
+    <div class="button-container">
+      <button id="speak-button">Speak</button>
+      <button id="clear-button">Clear</button>
+      <button id="remove-button">Remove Last</button>
+    </div>
+    
+  </div>
+
+<!-- About the Coders Tab -->
+<div class="tab-content" id="student">
+  <h2>Meet the Developers</h2>
+  
+  <div style="display: flex; justify-content: center; gap: 60px; flex-wrap: wrap; margin-top: 30px;">
+    
+<!-- Tatum -->
+<div style="text-align: center; width: 250px;">
+  <img src="/static/images/TatumProfile.jpg" alt="Tatum Hansen" style="width: 100%; height: 300px; object-fit: cover; border-radius: 12px; border: 2px solid #fff;">
+  <p style="font-size: 22px; font-weight: bold; margin: 10px 0;">Tatum Hansen</p>
+  <p><strong style="color: #f78bc1;">Computer Science – Big Data Analytics</strong></p>
+  <p style="font-size: 15px;">
+    Junior at Grand Canyon University, graduating in December of 2025! Focused on major categories of Information Technology and data analytics. 
+  </p>
+  <a href="https://www.linkedin.com/in/tatum-hansen-43b182273/" target="_blank" style="color: #f78bc1;">LinkedIn Profile</a>
+</div>
+
+<!-- Yulissa -->
+<div style="text-align: center; width: 250px;">
+  <img src="/static/images/YulissaProfile.jpeg" alt="Yulissa Valencia" style="width: 100%; height: 300px; object-fit: cover; border-radius: 12px; border: 2px solid #fff;">
+  <p style="font-size: 22px; font-weight: bold; margin: 10px 0;">Yulissa Valencia</p>
+  <p><strong style="color: #f78bc1;">Computer Science – Buisness Entreprenurship</strong></p>
+  <p style="font-size: 15px;">
+    Senior at Grand Canyon University, graduating in December of 2025! Focused on major categories of understanding technology from a buisness context. 
+  </p>
+  <a href="https://www.linkedin.com/in/yulissa-valencia-47470b252/" target="_blank" style="color: #f78bc1;">LinkedIn Profile</a>
+</div>
+
+  </div>
+</div>
+  
+  <!-- 📘 Project Info Tab -->
+  <div class="tab-content" id="project">
+    <h2>ASL Alphabet Translator</h2>
+  
+    <p style="max-width: 900px; margin: 0 auto;">
+      This real-time ASL translator detects and interprets hand gestures into letters using computer vision and machine learning.
+      It supports all static letters (A–Y) and motion-based signs (J and Z), offering both visual and audio feedback.
+    </p>
+  
+    <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 40px; margin-top: 30px;">
+  
+      <!-- Features -->
+      <div style="flex: 1 1 400px; min-width: 300px;">
+        <h3>Features</h3>
+        <ul>
+          <li>Live webcam hand detection</li>
+          <li>Supports ASL A–Z (static & motion)</li>
+          <li>Confidence-based filtering</li>
+          <li>Text-to-speech output</li>
+          <li>Dynamic gesture detection for "J" & "Z"</li>
+        </ul>
+      </div>
+  
+      <!-- Tools -->
+      <div style="flex: 1 1 400px; min-width: 300px;">
+        <h3>Tools & Technologies</h3>
+        <ul>
+          <li><strong>Python</strong>, <strong>OpenCV</strong>, <strong>MediaPipe</strong></li>
+          <li><strong>TensorFlow/Keras</strong></li>
+          <li><strong>Flask + Socket.IO</strong></li>
+          <li><strong>gTTS (text-to-speech)</strong></li>
+          <li><strong>HTML/CSS + JavaScript</strong></li>
+        </ul>
+      </div>
+  
+      <!-- Models -->
+      <div style="flex: 1 1 400px; min-width: 300px;">
+        <h3>Model Types</h3>
+        <ul>
+          <li><strong>DNN</strong> for static letters (A–Y)</li>
+          <li><strong>LSTM</strong> for motion letters (J, Z)</li>
+          <li>Separate training & prediction logic</li>
+          <li>Trained on real user gestures</li>
+        </ul>
+      </div>
+  
+      <!-- Workflow -->
+      <div style="flex: 1 1 400px; min-width: 300px;">
+        <h3>Workflow</h3>
+        <ol>
+          <li>Collect ASL gesture images</li>
+          <li>Preprocess with MediaPipe</li>
+          <li>Train static & dynamic models</li>
+          <li>Predict & speak letters live</li>
+        </ol>
+      </div>
+  
+    </div>
+  
+    <p style="margin-top: 30px; text-align: center;">
+      Built with accessibility, real-time responsiveness, and education in mind. Try signing a letter in front of your webcam to see it in action!
+    </p>
+  </div>
+
+  <!-- 📜 Tab + Socket Scripts -->
+  <script>
+    const socket = io.connect("http://localhost:5000");
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    const detectedLetter = document.getElementById("detected-letter");
+    const capturedSequence = document.getElementById("captured-sequence");
+    const logContainer = document.getElementById("log-container");
+
+    // 📸 Access webcam
+    navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => {
+      video.srcObject = stream;
+    });
+
+    function captureFrame() {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const dataURL = canvas.toDataURL("image/jpeg");
+      socket.emit("video_frame", dataURL);
+    }
+
+    setInterval(captureFrame, 100);
+
+    socket.on("handshape_result", (data) => {
+      detectedLetter.innerText = `${data.letter} (Confidence: ${data.confidence.toFixed(2)})`;
+
+      const log = document.createElement("div");
+      log.className = "log-item";
+      log.innerText = `[${new Date().toLocaleTimeString()}] ${data.letter} (${data.confidence.toFixed(2)})`;
+      logContainer.prepend(log);
+    });
+
+    socket.on("captured_sequence", (data) => {
+      capturedSequence.innerText = data.sequence || "None";
+    });
+
+    document.getElementById("speak-button").addEventListener("click", () => {
+      socket.emit("speak_sequence");
+    });
+
+    document.getElementById("clear-button").addEventListener("click", () => {
+      socket.emit("clear_sequence");
+      capturedSequence.innerText = "None";
+    });
+
+    document.getElementById("remove-button").addEventListener("click", () => {
+      socket.emit("remove_last_letter");
+    });
+
+    // 🔀 Tab switching logic
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+
+      document.querySelector(`[onclick="switchTab('${tabId}')"]`).classList.add('active');
+      document.getElementById(tabId).classList.add('active');
+    }
+  </script>
+</body>
+</html>
